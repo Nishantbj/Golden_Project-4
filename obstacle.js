@@ -7,7 +7,7 @@ class Obstacle {
      
       this.body = Bodies.circle(x, y, this.r, options);
       this.image = image
-     
+      this.isfall = false
       World.add(world, this.body);
     }
   
@@ -29,6 +29,7 @@ class Obstacle {
    
   
     display() {
+      if(!this.isfall){
       var angle = this.body.angle;
       var pos = this.body.position;
 
@@ -40,7 +41,15 @@ class Obstacle {
       //ellipseMode(RADIUS)
       image(this.image, 0, 0, this.r*2, this.r*2);
       pop();
-  
+      }
       
   }
-}
+  tint(){
+    this.isfall = true
+    World.remove(world,this.body)
+    tint(255,0)
+    image(this.image, this.body.position.x, this.body.position.y, this.r*2, this.r*2);
+
+    score+=5
+    }
+  }

@@ -2,13 +2,14 @@ const Engine = Matter.Engine;
 const World = Matter.World;
 const Bodies = Matter.Bodies;
 const Body = Matter.Body;
-var gameState, PLAY, END
-var bg, boyImg, boyStd, boy
-var startingPointImg, floatingIsland1, floatingIsland2
-var float1, float2, float3, float4, startingPoint, endingPoint
-var i = 0
-var j = 0
-
+var gameState, PLAY, END;
+var bg, boyImg, boyStd, boy;
+var startingPointImg, floatingIsland1, floatingIsland2;
+var float1, float2, float3, float4, startingPoint, endingPoint;
+var i = 0;
+var j = 0;
+var score = 0 
+var isfall = false
 function preload() {
   bg = loadImage("./Assets/bg.png");
   boyImg = loadAnimation(
@@ -23,41 +24,45 @@ function preload() {
   floatingIsland2 = loadImage("./Assets/floatingIsland2.png");
   bgSound = loadSound("./Assets/sound1.mp3");
   sadSound = loadSound("./Assets/sad.wav");
-  star
-
+  bombFall = loadSound("./Assets/bombFall.wav")
+  boyFall = loadSound("./Assets/boyFall.wav")
+  starImg = loadImage("./Assets/star.png")
+  obstacleImg = loadImage("./Assets/cannonball.png")
 }
 
 function setup() {
   canvas = createCanvas(windowWidth, windowHeight);
   engine = Engine.create();
   world = engine.world;
-  imageMode(CENTER); 1
-  boy = new Boy(100, height - 450);
+  imageMode(CENTER);
+  boy = new Boy(50, height - 450);
   console.log(boy.body);
 
-  startingPoint = new Ground(100, height - 300, 100, 250, startingPointImg);
-  float1 = new Ground(450, height - 300, 100, 250, floatingIsland1);
-  float2 = new Ground(700, height - 250, 100, 250, floatingIsland2);
-  float3 = new Ground(950, height - 350, 100, 250, floatingIsland1);
-  float4 = new Ground(1150, height - 250, 100, 250, floatingIsland2);
-  endingPoint = new Ground(1350, height - 300, 100, 250, startingPointImg);
+  startingPoint = new Ground(100, height - 100, 200, 250, startingPointImg);
+  //invisibleG = new Ground(100, height - 80, 200, 50);
+  float1 = new Ground(400, height - 250, 175, 225, floatingIsland1);
+  float2 = new Ground(650, height - 100, 150, 225, floatingIsland2);
+  float3 = new Ground(950, height - 150, 175, 250, floatingIsland1);
+  float4 = new Ground(1200, height - 250, 150, 250, floatingIsland2);
+  endingPoint = new Ground(1400, height - 400, 150, 250, startingPointImg);
 
-  obstacle1 = new Obstacle(100, 50)
-  obstacle2 = new Obstacle(450, 50)
-  obstacle3 = new Obstacle(700, 50)
-  obstacle4 = new Obstacle(950, 50)
-  obstacle5 = new Obstacle(1150, 50)
-  obstacle6 = new Obstacle(1350, 50)
+  obstacle1 = new Obstacle(100, 50,obstacleImg);
+  obstacle2 = new Obstacle(450, 50,obstacleImg);
+  obstacle3 = new Obstacle(700, 50,obstacleImg);
+  obstacle4 = new Obstacle(950, 50,obstacleImg);
+  obstacle5 = new Obstacle(1150, 50,obstacleImg);
+  obstacle6 = new Obstacle(1350, 50,obstacleImg);
 
-  star1 = new Obstacle(200, 500, starImg);
-  star2 = new Obstacle(450, 50, starImg);
-  star3 = new Obstacle(700, 50, starImg);
-  star4 = new Obstacle(950, 50, starImg);
-  star5 = new Obstacle(1150, 50, starImg);
-  PLAY = 1
-  END = 0
-  gameState = PLAY
-  bgSound.loop()
+  star1 = new Obstacle(200, 150,starImg);
+  star2 = new Obstacle(450, 50,starImg);
+  star3 = new Obstacle(700, 50,starImg);
+  star4 = new Obstacle(950, 50,starImg);
+  star5 = new Obstacle(1150, 50,starImg);
+  PLAY = 1;
+  END = 0;
+  gameState = PLAY;
+  bgSound.loop();
+  bgSound.setVolume(0.1)
 }
 
 function draw() {
@@ -65,9 +70,12 @@ function draw() {
   Engine.update(engine);
   // Game Background
   image(bg, width / 2, height / 2, width, height);
+  textSize(25)
+  fill("black")
+  text("Score:" + score, 50,20)
   if (gameState === PLAY) {
     //keyControls for the player
-    playerControls()
+    playerControls();
     textSize(30);
     fill("black");
     text("Press Space To Jump", width / 2 - 100, height - 50);
@@ -78,136 +86,97 @@ function draw() {
     float2.show();
     float3.show();
     float4.show();
-    endingPoint.show()
-    obstacle1.display()
-    obstacle2.display()
-    obstacle3.display()
-    obstacle4.display()
-    obstacle5.display()
-    obstacle6.display()
+    endingPoint.show();
+    //invisibleG.show()
+    obstacle1.display();
+    obstacle2.display();
+    obstacle3.display();
+    obstacle4.display();
+    obstacle5.display();
+    obstacle6.display();
+
+    star1.display()
+    star2.display()
+    star3.display()
+    star4.display()
+    star5.display()
+
     // checking the collision
-    collisionWithPoints()
+    collisionWithPoints(boy, float1,obstacle2);
+    collisionWithPoints(boy, float2,obstacle3);
+    collisionWithPoints(boy, float3,obstacle4);
+    collisionWithPoints(boy, startingPoint,obstacle1);
+    collisionWithPoints(boy, float4,obstacle5);
+    //collisionWithPoints(boy, endingPoint,obstacle6);
+    collisionWithStars(star1)
+    collisionWithStars(star2)
+    collisionWithStars(star3)
+    collisionWithStars(star4)
+    collisionWithStars(star5)
+
     if (boy.body.position.y > height - 50) {
-      gameState = END
+      gameState = END;
+      bgSound.stop()
+      boyFall.play()
     }
-  }
-  else if (gameState === END) {
+  } else if (gameState === END) {
     textSize(30);
     fill("black");
-    text("GameOver", width / 2, height / 2)
-    World.remove(world, boy)
+    text("GameOver", width / 2, height / 2);
+    World.remove(world, boy);
   }
-
 }
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-function collisionWithPoints() {
-  var collision = Matter.SAT.collides(boy.body, startingPoint.body);
-  console.log(collision)
+function collisionWithPoints(player, floatP,obstacle) {
+  var collision = Matter.SAT.collides(player.body, floatP.body);
+  console.log(collision);
 
   if (collision.collided) {
-    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30)
-    boy.body.velocity.x = 0
+    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30);
+    player.body.velocity.x = 0;
     if (keyDown("space")) {
-      boy.shoot();
+      player.shoot();
     }
-    setInterval(function () { Matter.Body.setStatic(obstacle1.body, false) }, 2000)
-    var bombcollision = Matter.SAT.collides(boy.body, obstacle1.body);
+    setInterval(function () {
+      Matter.Body.setStatic(obstacle.body, false);
+      //bombFall.play()
+    }, 3000);
+    var bombcollision = Matter.SAT.collides(player.body, obstacle.body);
     if (bombcollision.collided) {
-      gameState = END
-    }
-  }
-  var collision = Matter.SAT.collides(boy.body, float1.body);
-  console.log(collision)
-
-  if (collision.collided) {
-    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30)
-    boy.body.velocity.x = 0
-    if (keyDown("space")) {
-      boy.shoot();
-    }
-    setInterval(function () { Matter.Body.setStatic(obstacle2.body, false) }, 2000)
-    var bombcollision = Matter.SAT.collides(boy.body, obstacle2.body);
-    if (bombcollision.collided) {
-      gameState = END
-    }
-  }
-  var collision = Matter.SAT.collides(boy.body, float2.body);
-  console.log(collision)
-
-  if (collision.collided) {
-    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30)
-    boy.body.velocity.x = 0
-    if (keyDown("space")) {
-      boy.shoot();
-    }
-    setInterval(function () { Matter.Body.setStatic(obstacle3.body, false) }, 2000)
-    var bombcollision = Matter.SAT.collides(boy.body, obstacle3.body);
-    if (bombcollision.collided) {
-      gameState = END
-    }
-  }
-
-  var collision = Matter.SAT.collides(boy.body, float3.body);
-  console.log(collision)
-
-  if (collision.collided) {
-    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30)
-    boy.body.velocity.x = 0
-    if (keyDown("space")) {
-      boy.shoot();
-    }
-    setInterval(function () { Matter.Body.setStatic(obstacle4.body, false) }, 2000)
-    var bombcollision = Matter.SAT.collides(boy.body, obstacle4.body);
-    if (bombcollision.collided) {
-      gameState = END
-    }
-  }
-  var collision = Matter.SAT.collides(boy.body, float4.body);
-  console.log(collision)
-
-  if (collision.collided) {
-    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30)
-    boy.body.velocity.x = 0
-    if (keyDown("space")) {
-      boy.shoot();
-    }
-    setInterval(function () { Matter.Body.setStatic(obstacle5.body, false) }, 2000)
-    var bombcollision = Matter.SAT.collides(boy.body, obstacle5.body);
-    if (bombcollision.collided) {
-      gameState = END
-    }
-  }
-  var collision = Matter.SAT.collides(boy.body, endingPoint.body);
-  console.log(collision)
-
-  if (collision.collided) {
-    text("Bomb is ready to drop, jump quickly", width / 2 - 100, 30)
-    boy.body.velocity.x = 0
-    if (keyDown("space")) {
-      boy.shoot();
-    }
-    setInterval(function () { Matter.Body.setStatic(obstacle6.body, false) }, 2000)
-    var bombcollision = Matter.SAT.collides(boy.body, obstacle6.body);
-    if (bombcollision.collided) {
-      gameState = END
+      gameState = END;
+      bgSound.stop()
+      boyFall.play()
     }
   }
 }
 function playerControls() {
-  var prev = boy.body.position.x
-
+  var prev = boy.body.position.x;
 
   if (keyDown(RIGHT_ARROW) && i <= 2) {
-    boy.body.position.x += 1
-    i++
-    j = 0
+    boy.body.position.x += 1;
+    i++;
+    j = 0;
   }
   if (keyDown(LEFT_ARROW) && j <= 2) {
-    boy.body.position.x -= 1
-    j++
-    i = 0
+    boy.body.position.x -= 1;
+    j++;
+    i = 0;
+  }
+}
+
+function reset(){
+
+}
+
+function collisionWithStars(star){
+  var collision = Matter.SAT.collides(boy.body, star.body);
+  console.log(collision);
+
+  if (collision.collided) {
+    star.tint()
+    console.log("isWorking")
   }
 }
